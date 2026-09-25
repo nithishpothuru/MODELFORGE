@@ -1,0 +1,209 @@
+@charset "UTF-8";
+
+/* ==========================================================================
+   MODELFORGE DESIGN SYSTEM & TOKENS
+   Visual Identity: Apple / Linear / Vercel Luxury Dark Engineering
+   ========================================================================== */
+
+:root {
+  /* Color Palette (Exact Black Background Specifications) */
+  --bg-primary: #000000;
+  --bg-secondary: #050505;
+  --bg-tertiary: #080A0D;
+  --accent-cyan: #00D6FF;
+  --primary-blue: #00AFFF;
+  --warm-amber: #FFB14A;
+
+  /* Text Hierarchy */
+  --text-heading: rgba(255, 255, 255, 0.94);
+  --text-body: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.42);
+  --text-subtle: rgba(255, 255, 255, 0.25);
+
+  /* Surface & Border Overlays */
+  --surface-card: rgba(14, 18, 24, 0.65);
+  --surface-card-hover: rgba(18, 24, 34, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-cyan-subtle: rgba(0, 214, 255, 0.25);
+  --border-cyan-glow: rgba(0, 214, 255, 0.6);
+
+  /* Glows & Lighting */
+  --glow-cyan-soft: 0 0 35px rgba(0, 214, 255, 0.22);
+  --glow-cyan-intense: 0 0 50px rgba(0, 214, 255, 0.45);
+  --glow-amber-soft: 0 0 30px rgba(255, 177, 74, 0.2);
+
+  /* Typography — Professional High-End Editorial */
+  --font-sans: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  --font-script: 'Caveat', cursive;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+
+  /* Layout Spacing */
+  --header-height: 72px;
+  --section-spacing: 140px;
+  --container-max-width: 1240px;
+
+  /* Transitions */
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Base Reset & Smoothness */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: #000000 !important;
+  background: #000000 !important;
+  color: var(--text-body);
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  text-rendering: optimizeLegibility;
+}
+
+p, span, div, li, a {
+  font-family: var(--font-sans);
+}
+
+body {
+  background-color: #000000 !important;
+  background: #000000 !important;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* Selection Color */
+::selection {
+  background: rgba(0, 214, 255, 0.3);
+  color: #ffffff;
+}
+
+/* Links and Buttons Defaults */
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.25s var(--ease-apple);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+}
+
+/* Global Ambient Spotlight Cursor Light */
+.cursor-ambient-glow {
+  pointer-events: none;
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 214, 255, 0.035) 0%, rgba(0, 175, 255, 0.015) 35%, transparent 70%);
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* Section Container Utilities */
+.section-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* Global Radial Cyan Atmospheric Bloom */
+.radial-cyan-bloom {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 214, 255, 0.12) 0%, rgba(0, 175, 255, 0.04) 45%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.radial-amber-bloom {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 177, 74, 0.08) 0%, rgba(255, 177, 74, 0.02) 50%, transparent 75%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Shimmer & Pulse Animations */
+@keyframes ambientPulse {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes lightStreakOrbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slowFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes subtleShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
