@@ -1,1 +1,31 @@
+# Environment & credentials
 backend/.env
+.env
+.env.*
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# ModelForge local runtime uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Archives and binaries
+*.zip
+*.tar.gz
+*.pkl
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
