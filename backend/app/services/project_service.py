@@ -1,11 +1,14 @@
 import json
 import logging
+import shutil
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 from fastapi import HTTPException, UploadFile, status
 
+from app.config.settings import settings
 from app.schemas.project import (
     ProjectCreate,
     ProjectResponse,
@@ -84,6 +87,67 @@ class ProjectService:
             }
             self._projects[project_id] = reconstructed
             return reconstructed
+
+        # Fallback: check Supabase DB or Storage if local folder was deleted after upload
+        try:
+            client = get_supabase_client()
+            db_res = client.table("projects").select("*").eq("id", project_id).execute()
+            if db_res.data:
+                row = db_res.data[0]
+                now = datetime.now(timezone.utc)
+                reconstructed = {
+                    "id": project_id,
+                    "title": row.get("project_name") or "ModelForge Project",
+                    "description": None,
+                    "framework": None,
+                    "version": "1.0.0",
+                    "status": row.get("status") or "uploaded",
+                    "file_path": row.get("zip_path") or f"{project_id}/",
+                    "extracted_path": None,
+                    "main_file": row.get("main_file"),
+                    "requirements_file": row.get("requirements_file"),
+                    "python_version": None,
+                    "python_version_inferred": None,
+                    "validation_status": None,
+                    "validation_report": None,
+                    "metadata": {},
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                self._projects[project_id] = reconstructed
+                return reconstructed
+        except Exception:
+            pass
+
+        try:
+            client = get_supabase_client()
+            items = client.storage.from_(settings.SUPABASE_BUCKET).list(project_id)
+            valid_items = [it for it in items if it.get("name") and not it.get("name").startswith(".")]
+            if valid_items:
+                now = datetime.now(timezone.utc)
+                reconstructed = {
+                    "id": project_id,
+                    "title": "ModelForge Project",
+                    "description": None,
+                    "framework": None,
+                    "version": "1.0.0",
+                    "status": "uploaded",
+                    "file_path": f"{project_id}/",
+                    "extracted_path": None,
+                    "main_file": None,
+                    "requirements_file": None,
+                    "python_version": None,
+                    "python_version_inferred": None,
+                    "validation_status": None,
+                    "validation_report": None,
+                    "metadata": {},
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                self._projects[project_id] = reconstructed
+                return reconstructed
+        except Exception:
+            pass
 
         return None
 
@@ -179,6 +243,7 @@ class ProjectService:
                 detail=f"Project with ID '{project_id}' not found",
             )
         del self._projects[project_id]
+        storage_service.delete_local_project_dir(project_id)
 
         try:
             client = get_supabase_client()
@@ -223,7 +288,7 @@ class ProjectService:
                     extract_to=extract_dir,
                 )
 
-                project["extracted_path"] = str(extract_dir)
+                project["extracted_path"] = None
                 project["metadata"]["extracted_files"] = extracted_files
                 project["status"] = "uploaded"
 
@@ -252,8 +317,13 @@ class ProjectService:
                         pass
                 except Exception as exc:
                     logger.debug("Non-fatal Supabase sync of extracted files warning: %s", exc)
+
+                # Delete the folder in local storage once uploaded to Supabase Storage
+                storage_service.delete_local_project_dir(project_id)
             else:
                 project["status"] = "uploaded"
+                project["extracted_path"] = None
+                storage_service.delete_local_project_dir(project_id)
 
             # Keep the Supabase path in the API metadata,
             # not the machine-specific local path.
@@ -317,17 +387,28 @@ class ProjectService:
             )
 
         extracted_path_str = project.get("extracted_path")
-        if not extracted_path_str:
+        extract_dir = Path(extracted_path_str) if extracted_path_str else None
+        temp_download_dir: Optional[Path] = None
+
+        # If local extracted directory does not exist, download project files from Supabase Storage
+        if not extract_dir or not extract_dir.exists():
+            try:
+                client = get_supabase_client()
+                items = client.storage.from_(settings.SUPABASE_BUCKET).list(project_id)
+                valid_items = [it for it in items if it.get("name") and not it.get("name").startswith(".")]
+                if valid_items:
+                    temp_dir = tempfile.mkdtemp(prefix=f"modelforge_ci_val_{project_id}_")
+                    temp_download_dir = Path(temp_dir)
+                    downloaded = storage_service.download_directory_from_supabase(project_id, temp_download_dir)
+                    if downloaded:
+                        extract_dir = temp_download_dir
+            except Exception as exc:
+                logger.debug("Failed to download project from Supabase Storage: %s", exc)
+
+        if not extract_dir or not extract_dir.exists():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Project has no extracted files to validate. Please upload a project archive first.",
-            )
-
-        extract_dir = Path(extracted_path_str)
-        if not extract_dir.exists():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Extracted directory '{extracted_path_str}' no longer exists on disk.",
             )
 
         # Transition status to validating
@@ -343,112 +424,117 @@ class ProjectService:
         except Exception:
             pass
 
-        # Execute full automated pipeline
-        main_candidate = declared_main_file or project.get("main_file")
-        report = await self.ci_pipeline.run_pipeline(
-            project_id=project_id,
-            extract_dir=extract_dir,
-            declared_main_file=main_candidate,
-        )
+        try:
+            # Execute full automated pipeline
+            main_candidate = declared_main_file or project.get("main_file")
+            report = await self.ci_pipeline.run_pipeline(
+                project_id=project_id,
+                extract_dir=extract_dir,
+                declared_main_file=main_candidate,
+            )
 
-        # Update project state based on pipeline results
-        project["status"] = report.project_status.value
-        project["validation_status"] = report.status.value
-        project["validation_report"] = report.model_dump()
-        project["metadata"]["validation_report"] = report.model_dump()
-        project["python_version"] = report.python_version.version
-        project["python_version_inferred"] = report.python_version.is_inferred
+            # Update project state based on pipeline results
+            project["status"] = report.project_status.value
+            project["validation_status"] = report.status.value
+            project["validation_report"] = report.model_dump()
+            project["metadata"]["validation_report"] = report.model_dump()
+            project["python_version"] = report.python_version.version
+            project["python_version_inferred"] = report.python_version.is_inferred
 
-        if report.entry_point_validation.detected_entry_point:
-            project["main_file"] = report.entry_point_validation.detected_entry_point
+            if report.entry_point_validation.detected_entry_point:
+                project["main_file"] = report.entry_point_validation.detected_entry_point
 
-        # If a resolved lock file (requirements-resolved.txt) was produced, upload it to Supabase Storage
-        resolved_req_file = extract_dir / "requirements-resolved.txt"
-        if resolved_req_file.exists():
-            try:
-                storage_service.upload_file_to_supabase(
-                    local_path=resolved_req_file,
-                    storage_path=f"{project_id}/requirements-resolved.txt",
-                    content_type="text/plain",
-                )
-            except Exception as exc:
-                logger.debug("Non-fatal Supabase requirements-resolved.txt upload warning: %s", exc)
-
-        # Upload created/existing requirements.txt to Supabase Storage
-        req_candidates = list(extract_dir.rglob("requirements.txt"))
-        if req_candidates:
-            req_file = req_candidates[0]
-            try:
-                storage_req_path = f"{project_id}/requirements.txt"
-                storage_service.upload_file_to_supabase(
-                    local_path=req_file,
-                    storage_path=storage_req_path,
-                    content_type="text/plain",
-                )
-                project["requirements_file"] = storage_req_path
-
-                # If requirements.txt was generated in a nested folder, sync there too
-                rel_nested = str(req_file.relative_to(extract_dir)).replace("\\", "/")
-                if rel_nested != "requirements.txt":
+            # If a resolved lock file (requirements-resolved.txt) was produced, upload it to Supabase Storage
+            resolved_req_file = extract_dir / "requirements-resolved.txt"
+            if resolved_req_file.exists():
+                try:
                     storage_service.upload_file_to_supabase(
-                        local_path=req_file,
-                        storage_path=f"{project_id}/{rel_nested}",
+                        local_path=resolved_req_file,
+                        storage_path=f"{project_id}/requirements-resolved.txt",
                         content_type="text/plain",
                     )
-            except Exception as exc:
-                logger.debug("Non-fatal Supabase requirements.txt upload warning: %s", exc)
+                except Exception as exc:
+                    logger.debug("Non-fatal Supabase requirements-resolved.txt upload warning: %s", exc)
+
+            # Upload created/existing requirements.txt to Supabase Storage
+            req_candidates = list(extract_dir.rglob("requirements.txt"))
+            if req_candidates:
+                req_file = req_candidates[0]
+                try:
+                    storage_req_path = f"{project_id}/requirements.txt"
+                    storage_service.upload_file_to_supabase(
+                        local_path=req_file,
+                        storage_path=storage_req_path,
+                        content_type="text/plain",
+                    )
+                    project["requirements_file"] = storage_req_path
+
+                    # If requirements.txt was generated in a nested folder, sync there too
+                    rel_nested = str(req_file.relative_to(extract_dir)).replace("\\", "/")
+                    if rel_nested != "requirements.txt":
+                        storage_service.upload_file_to_supabase(
+                            local_path=req_file,
+                            storage_path=f"{project_id}/{rel_nested}",
+                            content_type="text/plain",
+                        )
+                except Exception as exc:
+                    logger.debug("Non-fatal Supabase requirements.txt upload warning: %s", exc)
+                    project["requirements_file"] = "requirements.txt"
+            elif report.requirements_existed or report.requirements_generated:
                 project["requirements_file"] = "requirements.txt"
-        elif report.requirements_existed or report.requirements_generated:
-            project["requirements_file"] = "requirements.txt"
 
-        # Also upload the validation report to Supabase Storage
-        report_file = extract_dir / "validation_report.json"
-        if report_file.exists():
+            # Also upload the validation report to Supabase Storage
+            report_file = extract_dir / "validation_report.json"
+            if report_file.exists():
+                try:
+                    storage_service.upload_file_to_supabase(
+                        local_path=report_file,
+                        storage_path=f"{project_id}/validation_report.json",
+                        content_type="application/json",
+                    )
+                except Exception as exc:
+                    logger.debug("Non-fatal Supabase validation_report.json upload warning: %s", exc)
+
+            # Remove any lingering zip files or extracted/ leftovers from Supabase Storage for this project
             try:
-                storage_service.upload_file_to_supabase(
-                    local_path=report_file,
-                    storage_path=f"{project_id}/validation_report.json",
-                    content_type="application/json",
-                )
-            except Exception as exc:
-                logger.debug("Non-fatal Supabase validation_report.json upload warning: %s", exc)
-
-        # Remove any lingering zip files or extracted/ leftovers from Supabase Storage for this project
-        try:
-            client = get_supabase_client()
-            client.storage.from_(settings.SUPABASE_BUCKET).remove([
-                f"{project_id}/Sample ML MODEL.zip",
-                f"{project_id}/model.zip",
-            ])
-            legacy_items = client.storage.from_(settings.SUPABASE_BUCKET).list(f"{project_id}/extracted")
-            if legacy_items:
+                client = get_supabase_client()
                 client.storage.from_(settings.SUPABASE_BUCKET).remove([
-                    f"{project_id}/extracted/{item['name']}" for item in legacy_items if item.get('name')
+                    f"{project_id}/Sample ML MODEL.zip",
+                    f"{project_id}/model.zip",
                 ])
-        except Exception:
-            pass
+                legacy_items = client.storage.from_(settings.SUPABASE_BUCKET).list(f"{project_id}/extracted")
+                if legacy_items:
+                    client.storage.from_(settings.SUPABASE_BUCKET).remove([
+                        f"{project_id}/extracted/{item['name']}" for item in legacy_items if item.get('name')
+                    ])
+            except Exception:
+                pass
 
-        if report.structure.detected_frameworks and not project.get("framework"):
-            project["framework"] = report.structure.detected_frameworks[0]
+            if report.structure.detected_frameworks and not project.get("framework"):
+                project["framework"] = report.structure.detected_frameworks[0]
 
-        now = datetime.now(timezone.utc)
-        project["updated_at"] = now
+            now = datetime.now(timezone.utc)
+            project["updated_at"] = now
 
-        # Sync final validation results with Supabase DB
-        try:
-            client = get_supabase_client()
-            db_update = {
-                "status": project["status"],
-                "updated_at": now.isoformat(),
-            }
-            if project.get("main_file"):
-                db_update["main_file"] = project["main_file"]
-            if project.get("requirements_file"):
-                db_update["requirements_file"] = project["requirements_file"]
+            # Sync final validation results with Supabase DB
+            try:
+                client = get_supabase_client()
+                db_update = {
+                    "status": project["status"],
+                    "updated_at": now.isoformat(),
+                }
+                if project.get("main_file"):
+                    db_update["main_file"] = project["main_file"]
+                if project.get("requirements_file"):
+                    db_update["requirements_file"] = project["requirements_file"]
 
-            client.table("projects").update(db_update).eq("id", project_id).execute()
-        except Exception as exc:
-            logger.debug("Non-fatal Supabase update warning: %s", exc)
+                client.table("projects").update(db_update).eq("id", project_id).execute()
+            except Exception as exc:
+                logger.debug("Non-fatal Supabase update warning: %s", exc)
+        finally:
+            if temp_download_dir and temp_download_dir.exists():
+                shutil.rmtree(temp_download_dir, ignore_errors=True)
+            storage_service.delete_local_project_dir(project_id)
 
         return report
 
@@ -463,7 +549,7 @@ class ProjectService:
 
         report_data = project.get("validation_report")
         if not report_data:
-            # Fallback: check if validation_report.json exists on disk
+            # Fallback 1: check if validation_report.json exists on disk
             extracted_path = project.get("extracted_path")
             if extracted_path:
                 disk_report = Path(extracted_path) / "validation_report.json"
@@ -473,6 +559,19 @@ class ProjectService:
                         project["validation_report"] = report_data
                     except Exception:
                         pass
+
+            # Fallback 2: check if validation_report.json exists in Supabase Storage
+            if not report_data:
+                try:
+                    client = get_supabase_client()
+                    content = client.storage.from_(settings.SUPABASE_BUCKET).download(
+                        f"{project_id}/validation_report.json"
+                    )
+                    if content:
+                        report_data = json.loads(content.decode("utf-8"))
+                        project["validation_report"] = report_data
+                except Exception:
+                    pass
 
         if not report_data:
             raise HTTPException(

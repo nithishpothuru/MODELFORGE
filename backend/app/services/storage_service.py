@@ -282,6 +282,52 @@ class StorageService:
 
         return uploaded_paths
 
+    def download_directory_from_supabase(
+        self,
+        storage_prefix: str,
+        local_dir: Path,
+    ) -> List[Path]:
+        """Download all files from Supabase Storage under storage_prefix to local_dir."""
+        downloaded: List[Path] = []
+        client = get_supabase_client()
+        local_dir.mkdir(parents=True, exist_ok=True)
+
+        def _download_prefix(curr_prefix: str, curr_target: Path):
+            try:
+                items = client.storage.from_(settings.SUPABASE_BUCKET).list(curr_prefix)
+            except Exception:
+                return
+
+            for item in items:
+                name = item.get("name")
+                if not name or name.startswith("."):
+                    continue
+
+                is_file = bool(item.get("id") or item.get("metadata"))
+                remote_item_path = f"{curr_prefix}/{name}".replace("//", "/")
+                local_item_path = curr_target / name
+
+                if is_file:
+                    try:
+                        content = client.storage.from_(settings.SUPABASE_BUCKET).download(remote_item_path)
+                        local_item_path.parent.mkdir(parents=True, exist_ok=True)
+                        local_item_path.write_bytes(content)
+                        downloaded.append(local_item_path)
+                    except Exception:
+                        pass
+                else:
+                    local_item_path.mkdir(parents=True, exist_ok=True)
+                    _download_prefix(remote_item_path, local_item_path)
+
+        _download_prefix(storage_prefix, local_dir)
+        return downloaded
+
+    def delete_local_project_dir(self, project_id: str) -> None:
+        """Remove the local uploads directory for a project."""
+        target = self.upload_dir / project_id
+        if target.exists():
+            shutil.rmtree(target, ignore_errors=True)
+
 
 storage_service = StorageService()
 
