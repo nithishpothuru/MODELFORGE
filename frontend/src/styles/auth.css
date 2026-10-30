@@ -1,0 +1,367 @@
+/* ==========================================================================
+   MODELFORGE AUTHENTICATION STYLES (LOGIN & SIGNUP)
+   ========================================================================== */
+
+.mf-auth-container {
+  min-height: 100vh;
+  background-color: #000000;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.mf-auth-ambient-glow {
+  position: absolute;
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 750px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(0, 214, 255, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(85px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mf-auth-nav {
+  padding: 24px 32px;
+  position: relative;
+  z-index: 10;
+}
+
+.mf-auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.mf-auth-back-link:hover {
+  color: #00D6FF;
+}
+
+.mf-auth-card-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 20px 48px;
+  position: relative;
+  z-index: 10;
+}
+
+.mf-auth-card {
+  width: 100%;
+  max-width: 500px;
+  background-color: #080A0D;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  padding: 40px 38px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.85), 0 0 50px rgba(0, 214, 255, 0.04);
+  box-sizing: border-box;
+}
+
+.mf-auth-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.mf-auth-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 20px;
+}
+
+.mf-auth-logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.mf-auth-brand-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.mf-auth-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.94);
+  letter-spacing: -0.025em;
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.mf-auth-subtitle {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.60);
+  line-height: 1.5;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Auth Card Input Overrides (Standardized 48-50px height) */
+.mf-auth-card .mf-input-group {
+  margin-bottom: 0;
+}
+
+.mf-auth-card .mf-input-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 3px;
+}
+
+.mf-auth-card .mf-input-field {
+  height: 48px;
+  font-size: 14px;
+  background-color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0 16px;
+  color: #ffffff;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.mf-auth-card .mf-input-field:focus {
+  border-color: #00D6FF;
+  box-shadow: 0 0 0 1px rgba(0, 214, 255, 0.4);
+  background-color: #000000;
+}
+
+.mf-auth-card .mf-input-field.with-left-icon {
+  padding-left: 44px;
+}
+
+.mf-auth-card .mf-input-field.with-right-action {
+  padding-right: 48px;
+}
+
+.mf-auth-card .mf-input-left-icon {
+  left: 14px;
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mf-auth-card .mf-input-right-action {
+  right: 8px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mf-password-toggle-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.mf-password-toggle-btn:hover {
+  color: #00D6FF;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Options row: Remember Me & Forgot Password */
+.mf-auth-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 2px 0;
+  box-sizing: border-box;
+}
+
+.mf-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.mf-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: #000000;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.mf-checkbox:focus-visible {
+  border-color: #00D6FF;
+  box-shadow: 0 0 0 2px rgba(0, 214, 255, 0.35);
+}
+
+.mf-checkbox:checked {
+  background: #00D6FF;
+  border-color: #00D6FF;
+}
+
+.mf-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 4.5px;
+  width: 4px;
+  height: 8px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.mf-forgot-password-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #00D6FF;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.mf-forgot-password-link:hover {
+  color: #38e1ff;
+  text-decoration: underline;
+}
+
+/* Primary Submit Button (Standardized 50-52px height) */
+.mf-auth-card .mf-btn.mf-auth-submit-btn {
+  width: 100%;
+  height: 50px;
+  background: #00D6FF;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 214, 255, 0.25);
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+
+.mf-auth-card .mf-btn.mf-auth-submit-btn:hover:not(:disabled) {
+  background: #2ee0ff;
+  box-shadow: 0 6px 20px rgba(0, 214, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.mf-auth-card .mf-btn.mf-auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.mf-auth-card .mf-btn.mf-auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.mf-auth-switch-prompt {
+  text-align: center;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 22px;
+}
+
+.mf-auth-link {
+  color: #00D6FF;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 4px;
+  transition: all 0.15s ease;
+}
+
+.mf-auth-link:hover {
+  text-decoration: underline;
+  color: #38e1ff;
+}
+
+.mf-auth-footer-text {
+  margin-top: 24px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.mf-protected-loading-screen {
+  min-height: 100vh;
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 540px) {
+  .mf-auth-nav {
+    padding: 16px 20px;
+  }
+
+  .mf-auth-card-wrapper {
+    padding: 12px 16px 36px;
+  }
+
+  .mf-auth-card {
+    padding: 30px 20px;
+    border-radius: 14px;
+    max-width: 100%;
+  }
+
+  .mf-auth-title {
+    font-size: 21px;
+  }
+
+  .mf-auth-subtitle {
+    font-size: 12.5px;
+  }
+
+  .mf-auth-options-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

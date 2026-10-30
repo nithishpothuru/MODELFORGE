@@ -1,0 +1,128 @@
+import React from 'react';
+import Badge from '../common/Badge';
+import Button from '../common/Button';
+import {
+  Terminal,
+  Container,
+  AlertCircle,
+  CheckCircle2,
+} from 'lucide-react';
+
+export default function DeploymentView({ project }) {
+
+  return (
+    <div className="space-y-6">
+      {/* Backend Capability Banner */}
+      <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-[#00D6FF]/10 border border-[#00D6FF]/20 text-[#00D6FF] shrink-0 mt-0.5">
+            <Container size={22} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-white text-base">
+                Container Runtime & Deployment Engine
+              </h3>
+              <Badge status="pending">Engine Standby</Badge>
+            </div>
+            <p className="text-xs text-white/60 mt-1 max-w-xl">
+              ModelForge packaging and CI validation are fully functional. Docker container build and live inference edge proxying are queued for backend integration.
+            </p>
+          </div>
+        </div>
+
+        <div className="shrink-0 flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="md"
+            disabled={true}
+            title="Backend Docker execution daemon is not connected yet"
+            leftIcon={<Container size={15} />}
+          >
+            Deploy Container
+          </Button>
+        </div>
+      </div>
+
+      {/* Integration Status Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Completed Capabilities */}
+        <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.02] space-y-3">
+          <div className="flex items-center gap-2 text-emerald-400 font-medium text-xs uppercase tracking-wider">
+            <CheckCircle2 size={14} />
+            <span>Implemented Pipeline Features</span>
+          </div>
+
+          <ul className="space-y-2 text-xs text-white/70">
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 font-mono">✓</span>
+              <span>Project registration and metadata storage</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 font-mono">✓</span>
+              <span>Model ZIP upload, extraction and path sanitation</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 font-mono">✓</span>
+              <span>Automated AST code parsing and syntax tree analysis</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-emerald-400 font-mono">✓</span>
+              <span>Requirements resolution & lockfile generation</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Missing Backend Capabilities */}
+        <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.02] space-y-3">
+          <div className="flex items-center gap-2 text-amber-400 font-medium text-xs uppercase tracking-wider">
+            <AlertCircle size={14} />
+            <span>Pending Backend Infrastructure</span>
+          </div>
+
+          <ul className="space-y-2 text-xs text-white/70">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-mono">○</span>
+              <span>Docker daemon connection (docker.sock or remote API)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-mono">○</span>
+              <span>Multi-stage Dockerfile build execution & registry push</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-mono">○</span>
+              <span>Dynamic port binding & healthcheck probe container run</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-400 font-mono">○</span>
+              <span>Reverse proxy route creation (Traefik / Envoy ingress)</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Target Deployment Manifest Specification */}
+      <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+        <h4 className="text-xs font-semibold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
+          <Terminal size={14} className="text-[#00D6FF]" />
+          <span>Generated Multi-Stage Dockerfile Specification</span>
+        </h4>
+        <pre className="p-3 bg-black/80 border border-white/10 rounded-lg text-xs font-mono text-white/70 overflow-x-auto">
+{`# Multi-Stage Runtime Generated by ModelForge
+FROM python:${project?.python_version || '3.11'}-slim AS builder
+WORKDIR /app
+COPY requirements-resolved.txt .
+RUN pip install --no-cache-dir --user -r requirements-resolved.txt
+
+FROM python:${project?.python_version || '3.11'}-slim AS runner
+WORKDIR /app
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "${project?.main_file ? project.main_file.replace('.py', '') : 'main'}:app", "--host", "0.0.0.0", "--port", "8000"]`}
+        </pre>
+      </div>
+    </div>
+  );
+}

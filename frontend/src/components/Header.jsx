@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Menu, X, LogIn } from 'lucide-react';
 import logoFrame240 from '../assets/sections/logo_frame240.png';
 
 export default function Header() {
@@ -69,12 +70,16 @@ export default function Header() {
           </ul>
         </nav>
 
-        {/* Right: Rounded "Get Started" CTA Button */}
+        {/* Right: Sign In & Get Started CTA Buttons */}
         <div className="header-actions">
-          <a href="#chapter-cta" className="btn-get-started">
+          <Link to="/login" className="nav-sign-in-link">
+            <span>Sign In</span>
+          </Link>
+
+          <Link to="/login" className="btn-get-started">
             <span>Get Started</span>
             <ArrowRight size={14} className="arrow-icon" />
-          </a>
+          </Link>
 
           {/* Mobile Menu Toggle */}
           <button
@@ -103,15 +108,25 @@ export default function Header() {
                 </a>
               </li>
             ))}
+            <li className="mobile-nav-auth-item">
+              <Link
+                to="/login"
+                className="mobile-nav-link mobile-signin-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <LogIn size={15} />
+                <span>Sign In</span>
+              </Link>
+            </li>
             <li className="mobile-cta-item">
-              <a
-                href="#chapter-cta"
+              <Link
+                to="/login"
                 className="btn-get-started mobile-full"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <span>Get Started</span>
                 <ArrowRight size={14} />
-              </a>
+              </Link>
             </li>
           </ul>
         </div>
