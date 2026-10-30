@@ -4,3 +4,5 @@ python-multipart
 supabase
 pydantic-settings
 python-dotenv
+docker
+jinja2

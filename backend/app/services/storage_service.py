@@ -20,7 +20,8 @@ MAX_ARCHIVE_FILES = 5000
 
 class StorageService:
     def __init__(self):
-        self.upload_dir = Path(settings.UPLOAD_DIR).resolve()
+        backend_uploads = Path(__file__).resolve().parent.parent.parent / "uploads"
+        self.upload_dir = backend_uploads.resolve() if backend_uploads.exists() else Path(settings.UPLOAD_DIR).resolve()
         self.upload_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod

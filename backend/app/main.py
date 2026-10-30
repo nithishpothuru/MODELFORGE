@@ -1,11 +1,12 @@
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.config.settings import settings
 from app.api.routes.project import router as project_router
+from app.api.routes.deployment import router as deployment_router
 from app.services.supabase_client import get_supabase_client
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -28,7 +29,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 # Register API routers
 app.include_router(project_router, prefix=settings.API_V1_STR)
-
+app.include_router(deployment_router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Health"])
 def root():

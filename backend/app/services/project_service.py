@@ -31,6 +31,28 @@ class ProjectService:
 
     def list_projects(self) -> List[ProjectResponse]:
         """Return all projects."""
+        # Sync projects from Supabase DB
+        try:
+            client = get_supabase_client()
+            db_res = client.table("projects").select("id").execute()
+            if db_res.data:
+                for row in db_res.data:
+                    p_id = row.get("id")
+                    if p_id:
+                        self._resolve_project(p_id)
+        except Exception:
+            pass
+
+        # Sync projects from local uploads directory
+        try:
+            upload_dir = Path(storage_service.upload_dir)
+            if upload_dir.exists():
+                for p_dir in upload_dir.iterdir():
+                    if p_dir.is_dir() and len(p_dir.name) > 10:
+                        self._resolve_project(p_dir.name)
+        except Exception:
+            pass
+
         return [ProjectResponse(**p) for p in self._projects.values()]
 
     def _resolve_project(self, project_id: str) -> Optional[dict]:
